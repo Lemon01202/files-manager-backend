@@ -212,19 +212,4 @@ export class FilesService {
   ) {
     return this.permissionsService.assignPermission(email, id, permission);
   }
-
-  async getFilesByUserEmail(email: string) {
-    const publicFiles = await this.fileModel.findAll({
-      where: { isPublic: true },
-    });
-    const permissions =
-      await this.permissionsService.getPermissionsForUser(email);
-    const fileIdsWithAccess = permissions.map(
-      (permission) => permission.fileId,
-    );
-    const privateFiles = await this.fileModel.findAll({
-      where: { id: fileIdsWithAccess, isPublic: false },
-    });
-    return [...publicFiles, ...privateFiles];
-  }
 }

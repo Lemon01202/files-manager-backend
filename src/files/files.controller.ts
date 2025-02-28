@@ -12,10 +12,18 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiConsumes,
+  ApiBody,
+  ApiBearerAuth,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FilesService } from './files.service';
 import { AuthGuard } from '@nestjs/passport';
+import { UploadFileDto, UpdateFileDto, ShareFileDto } from './dto/file.dto';
 
 @ApiTags('Files')
 @Controller('files')
@@ -25,21 +33,31 @@ export class FilesController {
   @Post('upload')
   @ApiOperation({ summary: 'Upload file' })
   @ApiConsumes('multipart/form-data')
+  @ApiBody({ description: 'File upload', type: UploadFileDto })
   @UseInterceptors(FileInterceptor('file'))
+  @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'))
+  @ApiResponse({ status: 201, description: 'File successfully uploaded' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async uploadFile(
     @Request() req,
     @UploadedFile() file: Express.Multer.File,
-    @Body('isPublic') isPublic: boolean,
-    @Body('folderId') folderId?: number,
+    @Body() uploadFileDto: UploadFileDto,
   ) {
     const email = req.user.email;
-    return this.filesService.uploadFile(file, isPublic, folderId, email);
+    return this.filesService.uploadFile(
+      file,
+      uploadFileDto.isPublic,
+      uploadFileDto.folderId,
+      email,
+    );
   }
 
   @Get('by-folder/:id')
   @ApiOperation({ summary: 'Get files by folder ID' })
+  @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'))
+  @ApiResponse({ status: 200, description: 'Files list' })
   async getFilesByFolderId(
     @Request() req,
     @Param('id') folderId: string,
@@ -54,6 +72,7 @@ export class FilesController {
   @Patch(':id/privacy')
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Toggle file privacy' })
+  @ApiBearerAuth()
   async toggleFilePrivacy(@Param('id') id: number, @Request() req) {
     const email = req.user.email;
     return this.filesService.toggleFilePrivacy(id, email);
@@ -61,6 +80,7 @@ export class FilesController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get file by ID' })
+  @ApiBearerAuth()
   async getFile(@Param('id') id: number, @Request() req) {
     const email = req.user.email;
     return this.filesService.getFile(id, email);
@@ -69,6 +89,7 @@ export class FilesController {
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Delete file by ID' })
+  @ApiBearerAuth()
   async deleteFile(@Param('id') id: number, @Request() req) {
     const email = req.user.email;
     return this.filesService.deleteFile(id, email);
@@ -78,10 +99,13 @@ export class FilesController {
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ summary: 'Update file details' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ description: 'Update file data', type: UpdateFileDto })
+  @ApiBearerAuth()
   async updateFile(
     @Param('id') id: number,
     @UploadedFile() file: Express.Multer.File,
-    @Body() updateData: any,
+    @Body() updateData: UpdateFileDto,
     @Request() req,
   ) {
     const email = req.user.email;
@@ -91,6 +115,7 @@ export class FilesController {
   @Patch(':id/privacy')
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Update file privacy' })
+  @ApiBearerAuth()
   async setFilePrivacy(
     @Param('id') id: number,
     @Body('isPublic') isPublic: boolean,
@@ -103,20 +128,17 @@ export class FilesController {
   @Post(':id/share')
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Share file access' })
+  @ApiBody({ type: ShareFileDto })
+  @ApiBearerAuth()
   async shareFileAccess(
     @Param('id') id: number,
-    @Body('email') email: string,
-    @Body('permission') permission: 'view' | 'edit',
+    @Body() shareFileDto: ShareFileDto,
     @Request() req,
   ) {
-    return this.filesService.shareFileAccess(id, email, permission);
-  }
-
-  @Get('by-user')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiOperation({ summary: 'Get files accessible by user email' })
-  async getFilesByUserEmail(@Request() req) {
-    const email = req.user.email;
-    return this.filesService.getFilesByUserEmail(email);
+    return this.filesService.shareFileAccess(
+      id,
+      shareFileDto.email,
+      shareFileDto.permission,
+    );
   }
 }
