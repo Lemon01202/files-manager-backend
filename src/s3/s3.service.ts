@@ -1,6 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ManagedUpload } from 'aws-sdk/clients/s3';
 import { s3 } from '../../config/aws.config';
+import * as AWS from 'aws-sdk';
 
 @Injectable()
 export class S3Service {
@@ -20,9 +21,11 @@ export class S3Service {
   ): Promise<ManagedUpload.SendData> {
     this.checkBucketName();
 
-    const params: any = {
-      Bucket: this.bucketName,
-      Key: `${folderPath}/${file.originalname}`,
+    const key = `${folderPath}/${file.originalname}`;
+
+    const params: AWS.S3.PutObjectRequest = {
+      Bucket: this.bucketName!,
+      Key: key,
       Body: file.buffer,
       ContentType: file.mimetype,
       ACL: 'public-read',
@@ -34,8 +37,8 @@ export class S3Service {
   async deleteFile(fileKey: string): Promise<void> {
     this.checkBucketName();
 
-    const params: any = {
-      Bucket: this.bucketName,
+    const params: AWS.S3.DeleteObjectRequest = {
+      Bucket: this.bucketName!,
       Key: fileKey,
     };
 
@@ -45,12 +48,14 @@ export class S3Service {
   async getFileUrl(fileKey: string): Promise<string> {
     this.checkBucketName();
 
-    const params = {
-      Bucket: this.bucketName,
+    const params: AWS.S3.GetObjectRequest = {
+      Bucket: this.bucketName!,
       Key: fileKey,
-      Expires: 3600,
     };
 
-    return s3.getSignedUrl('getObject', params);
+    return s3.getSignedUrl('getObject', {
+      ...params,
+      Expires: 3600,
+    });
   }
 }

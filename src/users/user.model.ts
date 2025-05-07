@@ -40,4 +40,10 @@ export class User extends Model<User, UserCreationAttributes> {
     allowNull: true,
   })
   picture: string;
+
+  @Column({
+    type: DataType.NUMBER,
+    allowNull: true,
+  })
+  googleId: number;
 }

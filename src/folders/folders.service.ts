@@ -6,6 +6,7 @@ import * as path from 'path';
 import { UpdateFolderDto } from './dto/update-folder-dto';
 import { Op } from 'sequelize';
 import { FilesService } from '../files/files.service';
+import { WhereOptions } from 'sequelize';
 
 @Injectable()
 export class FoldersService {
@@ -44,16 +45,15 @@ export class FoldersService {
   }
 
   async getFolderPath(folder: Folder): Promise<string> {
-    let currentFolder: any = folder;
+    let currentFolder: Folder | null = folder;
     let folderPath = currentFolder.folderName;
 
     while (currentFolder?.parentFolderId) {
       currentFolder = await this.folderModel.findByPk(
         currentFolder.parentFolderId,
       );
-      if (!currentFolder) {
-        break;
-      }
+      if (!currentFolder) break;
+
       folderPath = path.join(currentFolder.folderName, folderPath);
     }
 
@@ -61,35 +61,30 @@ export class FoldersService {
   }
 
   async getRootFolders(name?: string) {
-    const whereClause: any = { parentFolderId: null };
-
-    if (name && name.trim()) {
-      whereClause.folderName = {
-        [Op.iLike]: `%${name.trim()}%`,
-      };
-    }
+    const whereClause = {
+      parentFolderId: { [Op.is]: null },
+      ...(name?.trim() && {
+        folderName: { [Op.iLike]: `%${name.trim()}%` },
+      }),
+    };
 
     return await this.folderModel.findAll({ where: whereClause });
   }
 
   async getChildFolders(parentFolderId: number | string, name?: string) {
-    const whereClause: any = {};
+    const whereClause: WhereOptions<Folder> = {};
 
     if (parentFolderId === 'all') {
-      if (name && name.trim()) {
-        whereClause.folderName = {
-          [Op.iLike]: `%${name.trim()}%`,
-        };
+      if (name?.trim()) {
+        whereClause.folderName = { [Op.iLike]: `%${name.trim()}%` };
       }
       return await this.folderModel.findAll({ where: whereClause });
     }
 
-    whereClause.parentFolderId = parentFolderId;
+    whereClause.parentFolderId = Number(parentFolderId);
 
-    if (name && name.trim()) {
-      whereClause.folderName = {
-        [Op.iLike]: `%${name.trim()}%`,
-      };
+    if (name?.trim()) {
+      whereClause.folderName = { [Op.iLike]: `%${name.trim()}%` };
     }
 
     return await this.folderModel.findAll({ where: whereClause });
@@ -119,10 +114,7 @@ export class FoldersService {
     }
 
     const oldFolderPath = await this.getFolderPath(folder);
-
-    const newFolderName = updateFolderDto.folderName;
-
-    folder.folderName = newFolderName;
+    folder.folderName = updateFolderDto.folderName;
     await folder.save();
 
     const newFolderPath = await this.getFolderPath(folder);
@@ -140,12 +132,10 @@ export class FoldersService {
   }
 
   async getAllFolders(name?: string) {
-    const whereClause: any = {};
+    const whereClause: WhereOptions<Folder> = {};
 
-    if (name && name.trim()) {
-      whereClause.folderName = {
-        [Op.iLike]: `%${name.trim()}%`,
-      };
+    if (name?.trim()) {
+      whereClause.folderName = { [Op.iLike]: `%${name.trim()}%` };
     }
 
     return await this.folderModel.findAll({ where: whereClause });

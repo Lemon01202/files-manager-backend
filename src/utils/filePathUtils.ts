@@ -34,7 +34,7 @@ export const getFolderPath = async (
   folder: Folder,
   folderModel: typeof Folder,
 ): Promise<string> => {
-  let currentFolder: any = folder;
+  let currentFolder: Folder | null = folder;
   let folderPath = currentFolder.folderName;
   while (currentFolder?.parentFolderId) {
     currentFolder = await folderModel.findByPk(currentFolder.parentFolderId);

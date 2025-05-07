@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { File } from './file.model';
-import { Op } from 'sequelize';
+import { Op, WhereOptions } from 'sequelize';
 import * as path from 'path';
 import { Folder } from '../folders/folder.model';
 import { PermissionsService } from '../permissions/permissions.service';
@@ -95,7 +95,7 @@ export class FilesService {
     name?: string,
     email?: string,
   ) {
-    const whereClause: any = {};
+    const whereClause: WhereOptions = {};
     if (folderId === 'null' || folderId === null) {
       whereClause.folderId = { [Op.is]: null };
     } else {

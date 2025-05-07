@@ -1,9 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Express } from 'express';
 
 export class UploadFileDto {
   @ApiProperty({ type: 'string', format: 'binary' })
-  file: any;
+  file: Express.Multer.File;
 
   @ApiProperty({ required: false, default: false })
   @IsBoolean()

@@ -1,10 +1,14 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
+import { Queue, Job } from 'bull';
 import * as sharp from 'sharp';
 import * as ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import * as path from 'path';
+
+interface FileJobData {
+  filePath: string;
+}
 
 @Injectable()
 export class FileProcessor implements OnModuleInit {
@@ -17,15 +21,17 @@ export class FileProcessor implements OnModuleInit {
   }
 
   async onModuleInit() {
-    await this.fileQueue.process('compress-image', async (job) =>
-      this.handleImageCompression(job),
+    await this.fileQueue.process(
+      'compress-image',
+      async (job: Job<FileJobData>) => this.handleImageCompression(job),
     );
-    await this.fileQueue.process('compress-video', async (job) =>
-      this.handleVideoCompression(job),
+    await this.fileQueue.process(
+      'compress-video',
+      async (job: Job<FileJobData>) => this.handleVideoCompression(job),
     );
   }
 
-  private async handleImageCompression(job: any) {
+  private async handleImageCompression(job: Job<FileJobData>) {
     const { filePath } = job.data;
     const compressedPath = path.join(this.outputDir, path.basename(filePath));
 
@@ -37,11 +43,11 @@ export class FileProcessor implements OnModuleInit {
     return { compressedPath };
   }
 
-  private async handleVideoCompression(job: any) {
+  private async handleVideoCompression(job: Job<FileJobData>) {
     const { filePath } = job.data;
     const compressedPath = path.join(this.outputDir, path.basename(filePath));
 
-    return new Promise((resolve, reject) => {
+    return new Promise<{ compressedPath: string }>((resolve, reject) => {
       ffmpeg(filePath)
         .output(compressedPath)
         .videoCodec('libx264')

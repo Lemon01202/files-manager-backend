@@ -31,7 +31,7 @@ export class AuthService {
     return user;
   }
 
-  createJwtToken(user: any) {
+  createJwtToken(user: User) {
     const payload = { googleId: user.googleId, email: user.email };
     return this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET,
